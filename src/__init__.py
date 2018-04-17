@@ -1,4 +1,4 @@
 # -*- coding: utf-8 -*-
 
 from .utils import *
-from .rowdetector import *
+from .row_detector import *

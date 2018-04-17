@@ -1,3 +1,3 @@
 # -*- coding: utf-8 -*-
 
-from annuaryregisterparser import *
+from annuary_register_parser import *
