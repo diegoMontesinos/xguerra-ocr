@@ -44,4 +44,4 @@ def get_register_id(tokens):
 
 def get_register_type(tokens):
   # TODO
-  return 'People'
+  return 'people'

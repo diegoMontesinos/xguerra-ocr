@@ -2,16 +2,14 @@
 
 import cv2
 
-def show_scaled_image(title, img, scale, wait=True):
+def show_scaled_image(title, img, scale):
 
   height, width = img.shape[:2]
-  resized = cv2.resize(img, (int(width * scale), int(height * scale)))
+  resized = cv2.resize(img, (0, 0), None, scale, scale)
 
   cv2.imshow(title, resized)
-
-  if wait:
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+  cv2.waitKey(0)
+  cv2.destroyAllWindows()
 
 def binarize_image(image_src):
 

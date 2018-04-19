@@ -11,37 +11,65 @@ def add_valid_register(register):
   print('Added register: ' + str(register))
 
 def fix_reading_errors(binary_image, reading_errors):
+  print('\nPlease, help me to fix the following errors (● ω ●):')
+
+  # Send to fix all errors
   for reading_error in reading_errors:
-    print reading_error
+    user_fix_error(binary_image, reading_error)
+
+def user_fix_error(binary_image, reading_error):
+  row, exception = reading_error
+  print('\n' + str(exception))
+
+  # Get ROI image and display
+  x, y, w, h = row
+  roi = binary_image[y:y+h, x:x+w]
+
+  cv2.imshow('Bad readed row', roi)
+  cv2.waitKey(1)
+
+  # Wait user input and destroy the window
+  user_input = raw_input('Enter the fixed register: ')
+  cv2.destroyAllWindows()
+
+  # Try to parse user input and catch errors to try again 
+  try:
+    register = parse_register_str(user_input)
+    add_valid_register(register)
+  except Exception as exception:
+    print('Upsis, it seems that you enter an invalid register. Try again.')
+    user_fix_error(binary_image, reading_error)
 
 def process_rows(binary_image, rows, args):
-  print('Begin to processing rows...')
+  print('Processing rows...')
 
   reading_errors = []
 
+  # Iterate all rows
   for i, row in enumerate(rows):
     x, y, w, h = row
     
+    # Get ROI (region of interest) and execute OCR
     roi = binary_image[y:y+h, x:x+w]
 
     readed = pytesseract.image_to_string(roi)
     register_str = readed.encode('utf-8')
 
+    # Parser and catch errors
     try:
       register = parse_register_str(register_str)
       add_valid_register(register)
     except Exception as exception:
       reading_errors.append((row, exception))
-    
-    if len(reading_errors) == 3:
-      break
   
-  print('Finished with ' + str(len(reading_errors)) + ' errors')
+  print('Finished with ' + str(len(reading_errors)) + ' errors.')
 
+  # Fix errors if exist
   if len(reading_errors) > 0:
+    print('( ∩ ︵ ∩ )')
     fix_reading_errors(binary_image, reading_errors)
   else:
-    print('Perfect!')
+    print('Perfect (✿ ♥ ‿ ♥ )!')
 
 def process_image(args):
   print('Processing file ' + args.input + '...')
@@ -58,7 +86,7 @@ def process_image(args):
 
   # Get rows
   rows = find_rows(binary_image, args)
-  print('Finded ' + str(len(rows)) + ' rows.')
+  print('\nFind ' + str(len(rows)) + ' rows!')
 
   if args.debug:
     boxes_img = draw_boxes(binary_image, rows, (0, 255, 0))
