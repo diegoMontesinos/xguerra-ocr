@@ -7,10 +7,17 @@ import argparse
 import cv2
 from src import *
 
-def process_rows(binary_image, rows, args):
-  print('Process rows and dump into ' + args.output)
+def add_valid_register(register):
+  print('Added register: ' + str(register))
 
-  bad_count = 0
+def fix_reading_errors(binary_image, reading_errors):
+  for reading_error in reading_errors:
+    print reading_error
+
+def process_rows(binary_image, rows, args):
+  print('Begin to processing rows...')
+
+  reading_errors = []
 
   for i, row in enumerate(rows):
     x, y, w, h = row
@@ -22,25 +29,24 @@ def process_rows(binary_image, rows, args):
 
     try:
       register = parse_register_str(register_str)
-    except Exception as e:
-      print '\n'
-      print e
-      show_scaled_image('Row: ' + str(i), roi, 1.0, wait=False)
-      user_input = raw_input()
-      register = parse_register_str(user_input)
-      print user_input
-      
-      bad_count += 1
+      add_valid_register(register)
+    except Exception as exception:
+      reading_errors.append((row, exception))
     
-    print register
+    if len(reading_errors) == 3:
+      break
   
-  print('Errors in: ' + str(bad_count) + ' registers of: ' + str(len(rows)))
+  print('Finished with ' + str(len(reading_errors)) + ' errors')
+
+  if len(reading_errors) > 0:
+    fix_reading_errors(binary_image, reading_errors)
+  else:
+    print('Perfect!')
 
 def process_image(args):
   print('Processing file ' + args.input + '...')
 
   # Read image source
-  print('Readed image source.')
   image_src = cv2.imread(args.input)
   if args.debug:
     show_scaled_image('source', image_src, 0.35)
@@ -67,7 +73,7 @@ def main():
   # Config parser
   parser = argparse.ArgumentParser(description='Digitalization of Annuary-part from Francois-Xavier Guerra database.')
   parser.add_argument('-i', '--input', help='Input image file', required=True)
-  parser.add_argument('-o', '--output', help='Output text file', default='output.txt')
+  parser.add_argument('-o', '--output', help='Output CSV file', default='output.csv')
   parser.add_argument('-d', '--debug', help='Debug parameter', action='store_true')
 
   args = parser.parse_args()

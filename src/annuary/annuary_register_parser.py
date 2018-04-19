@@ -6,42 +6,42 @@ ONLY_NUMBERS           = re.compile(u'^[0-9]*$')
 ONLY_UPPERCASE_DOTS    = re.compile(u'^[A-Z. \(\)]*$')
 ONLY_UPPERCASE_LETTERS = re.compile(u'^[A-Z]*$')
 
-class AnnuaryRegisterParser():
+def parse_register_str(register_str):
+  tokens = register_str.split(' ')
 
-  def __init__(self):
-    pass
+  if '\n' in register_str:
+    raise Exception('Register contains breakline, should be a line')
+
+  if len(tokens) < 3:
+    raise Exception('Insuficient tokens at register: ' + register_str)
   
-  def parse_register_str(register_str):
-    tokens = register_str.split(' ')
+  register_id = get_register_id(tokens)
 
-    if '\n' in register_str:
-      raise Exception('Register contains breakline, should be a line')
-      print('Here!!!!')
+  index_id = len(tokens[0]) + len(tokens[1]) + 1
+  name = register_str[index_id:].strip()
+  name = name.replace(',', '.')
 
-    if len(tokens) < 3:
-      raise Exception('Insuficient tokens at register: ' + register_str)
-    
-    register_id = get_register_id(tokens)
+  if ONLY_UPPERCASE_DOTS.match(name) == None:
+    raise Exception('Invalid name: ' + name)
 
-    index_id = len(tokens[0]) + len(tokens[1]) + 1
-    name = register_str[index_id:].strip()
-    name = name.replace(',', '.')
+  register_type = get_register_type(tokens)
 
-    if ONLY_UPPERCASE_DOTS.match(name) == None:
-      raise Exception('Invalid name: ' + name)
+  return { 'id' : register_id, 'name' : name, 'type': register_type }
 
-    return { 'id' : register_id, 'name' : name }
+def get_register_id(tokens):
 
-  def get_register_id(tokens):
+  # Get and validate id
+  letters_id = tokens[0]
+  numbers_id = tokens[1]
 
-    # Get and validate id
-    letters_id = tokens[0]
-    numbers_id = tokens[1]
+  if (ONLY_UPPERCASE_LETTERS.match(letters_id) == None) or (len(letters_id) < 2):
+    raise Exception('Bad letters id: ' + letters_id)
+  
+  if ONLY_NUMBERS.match(numbers_id) == None:
+    raise Exception('Bad numbers id: ' + numbers_id)
+  
+  return (letters_id, int(numbers_id))
 
-    if (ONLY_UPPERCASE_LETTERS.match(letters_id) == None) or (len(letters_id) < 2):
-      raise Exception('Bad letters id: ' + letters_id)
-    
-    if ONLY_NUMBERS.match(numbers_id) == None:
-      raise Exception('Bad numbers id: ' + numbers_id)
-    
-    return (letters_id, int(numbers_id))
+def get_register_type(tokens):
+  # TODO
+  return 'People'
