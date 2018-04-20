@@ -7,71 +7,7 @@ import argparse
 import cv2
 from src import *
 
-def add_valid_register(register):
-  print('Added register: ' + str(register))
-
-def fix_reading_errors(binary_image, reading_errors):
-  print('\nPlease, help me to fix the following errors (● ω ●):')
-
-  # Send to fix all errors
-  for reading_error in reading_errors:
-    user_fix_error(binary_image, reading_error)
-
-def user_fix_error(binary_image, reading_error):
-  row, exception = reading_error
-  print('\n' + str(exception))
-
-  # Get ROI image and display
-  x, y, w, h = row
-  roi = binary_image[y:y+h, x:x+w]
-
-  cv2.imshow('Bad readed row', roi)
-  cv2.waitKey(1)
-
-  # Wait user input and destroy the window
-  user_input = raw_input('Enter the fixed register: ')
-  cv2.destroyAllWindows()
-
-  # Try to parse user input and catch errors to try again 
-  try:
-    register = parse_register_str(user_input)
-    add_valid_register(register)
-  except Exception as exception:
-    print('Upsis, it seems that you enter an invalid register. Try again.')
-    user_fix_error(binary_image, reading_error)
-
-def process_rows(binary_image, rows, args):
-  print('Processing rows...')
-
-  reading_errors = []
-
-  # Iterate all rows
-  for i, row in enumerate(rows):
-    x, y, w, h = row
-    
-    # Get ROI (region of interest) and execute OCR
-    roi = binary_image[y:y+h, x:x+w]
-
-    readed = pytesseract.image_to_string(roi)
-    register_str = readed.encode('utf-8')
-
-    # Parser and catch errors
-    try:
-      register = parse_register_str(register_str)
-      add_valid_register(register)
-    except Exception as exception:
-      reading_errors.append((row, exception))
-  
-  print('Finished with ' + str(len(reading_errors)) + ' errors.')
-
-  # Fix errors if exist
-  if len(reading_errors) > 0:
-    print('( ∩ ︵ ∩ )')
-    fix_reading_errors(binary_image, reading_errors)
-  else:
-    print('Perfect (✿ ♥ ‿ ♥ )!')
-
-def process_image(args):
+def process_image(args, annuary_data):
   print('Processing file ' + args.input + '...')
 
   # Read image source
@@ -93,7 +29,68 @@ def process_image(args):
     show_scaled_image('rows', boxes_img, 0.35)
   
   # Process rows
-  process_rows(binary_image, rows, args)
+  process_rows(binary_image, rows, args, annuary_data)
+
+def process_rows(binary_image, rows, args, annuary_data):
+  print('Processing rows...')
+
+  reading_errors = []
+
+  # Iterate all rows
+  for i, row in enumerate(rows):
+    x, y, w, h = row
+    
+    # Get ROI (region of interest) and execute OCR
+    roi = binary_image[y:y+h, x:x+w]
+
+    readed = pytesseract.image_to_string(roi)
+    register_str = readed.encode('utf-8')
+
+    # Parser and catch errors
+    try:
+      register = parse_register_str(register_str)
+      annuary_data.add_register(register)
+    except Exception as exception:
+      reading_errors.append((row, exception))
+  
+  print('Finished with ' + str(len(reading_errors)) + ' errors.')
+
+  # Fix errors if exist
+  if len(reading_errors) > 0:
+    print('( ∩ ︵ ∩ )')
+    fix_reading_errors(binary_image, reading_errors, annuary_data)
+  else:
+    print('Perfect (✿ ♥ ‿ ♥ )!')
+
+def fix_reading_errors(binary_image, reading_errors, annuary_data):
+  print('\nPlease, help me to fix the following errors (● ω ●):')
+
+  # Send to fix all errors
+  for reading_error in reading_errors:
+    user_fix_error(binary_image, reading_error, annuary_data)
+
+def user_fix_error(binary_image, reading_error, annuary_data):
+  row, exception = reading_error
+  print('\n' + str(exception))
+
+  # Get ROI image and display
+  x, y, w, h = row
+  roi = binary_image[y:y+h, x:x+w]
+
+  cv2.imshow('Bad readed row', roi)
+  cv2.waitKey(1)
+
+  # Wait user input and destroy the window
+  user_input = raw_input('Enter the fixed register: ')
+  cv2.destroyAllWindows()
+
+  # Try to parse user input and catch errors to try again 
+  try:
+    register = parse_register_str(user_input)
+    annuary_data.add_register(register)
+  except Exception as exception:
+    print('Upsis, it seems that you enter an invalid register. Try again.')
+    user_fix_error(binary_image, reading_error, annuary_data)
 
 # Main script
 def main():
@@ -105,8 +102,11 @@ def main():
   parser.add_argument('-d', '--debug', help='Debug parameter', action='store_true')
 
   args = parser.parse_args()
-  process_image(args)
+
+  annuary_data = AnnuaryData(args.output)
+  process_image(args, annuary_data)
 
 if __name__ == '__main__':
+
   pytesseract.pytesseract.tesseract_cmd = '/usr/local/bin/tesseract'
   main()
