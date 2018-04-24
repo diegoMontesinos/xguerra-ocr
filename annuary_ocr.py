@@ -103,7 +103,7 @@ def main():
   # Config parser
   parser = argparse.ArgumentParser(description='Digitalization of Annuary-part from Francois-Xavier Guerra database.')
   parser.add_argument('-i', '--input', help='Input image file', required=True)
-  parser.add_argument('-o', '--output', help='Output CSV file', default='output.csv')
+  parser.add_argument('-o', '--output', help='Output CSV file', default='csv/annuary.csv')
   parser.add_argument('-d', '--debug', help='Debug parameter', action='store_true')
 
   args = parser.parse_args()

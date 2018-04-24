@@ -7,20 +7,28 @@ class AnnuaryData:
 
   def __init__(self, csvpath=None):
     self.data = {}
-    self.csvpath = csvpath
 
     if (csvpath != None) and os.path.exists(csvpath):
       self.load_from_file(csvpath)
     
   def load_from_file(self, csvpath):
-    print('Loading data from file ' + csvpath + '...')
-    pass
+    print('Loading data from file ' + csvpath + '...\n')
+    
+    with open(csvpath, 'rb') as csvfile:
+      annuary_reader = csv.reader(csvfile, delimiter=',')
+      for row in annuary_reader:
+        register = {
+          'id': (int(row[0]), row[1]),
+          'name': row[2],
+          'type': row[3]
+        }
+        self.add_register(register)
   
   def add_register(self, register):
-    if register['id'][1] in self.data:
+    if register['id'][0] in self.data:
       return
     
-    self.data[register['id'][1]] = register
+    self.data[register['id'][0]] = register
     print('Added register: ' + str(register))
   
   def save(self, csvpath=None):

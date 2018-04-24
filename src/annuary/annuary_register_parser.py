@@ -40,7 +40,7 @@ def get_register_id(tokens):
   if ONLY_NUMBERS.match(numbers_id) == None:
     raise Exception('Bad numbers id: ' + numbers_id)
   
-  return (letters_id, int(numbers_id))
+  return (int(numbers_id), letters_id)
 
 def get_register_type(tokens):
   # TODO
