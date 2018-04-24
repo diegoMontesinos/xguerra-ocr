@@ -13,25 +13,30 @@ def process_image(args, annuary_data):
   # Read image source
   image_src = cv2.imread(args.input)
   if args.debug:
-    show_scaled_image('source', image_src, 0.35)
+    show_scaled_image('source', image_src, 0.4)
 
   # Get binary image
   binary_image = binarize_image(image_src)
   if args.debug:
-    show_scaled_image('binary', binary_image, 0.35)
+    show_scaled_image('binary', binary_image, 0.4)
 
+  # Rotate some degrees
+  height, width = binary_image.shape[:2]
+  M = cv2.getRotationMatrix2D((width/2,height/2), 0.314, 1)
+  binary_image = cv2.warpAffine(binary_image, M, (width,height))
+  
   # Get rows
-  rows = find_rows(binary_image, args)
+  rows = find_rows_on_annuary(binary_image, args)
   print('\nFind ' + str(len(rows)) + ' rows!')
 
   if args.debug:
     boxes_img = draw_boxes(binary_image, rows, (0, 255, 0))
-    show_scaled_image('rows', boxes_img, 0.35)
+    show_scaled_image('rows', boxes_img, 0.4)
   
   # Process rows
-  process_rows(binary_image, rows, args, annuary_data)
+  process_rows(binary_image, rows, annuary_data, args)
 
-def process_rows(binary_image, rows, args, annuary_data):
+def process_rows(binary_image, rows, annuary_data, args):
   print('Processing rows...')
 
   reading_errors = []
@@ -105,6 +110,7 @@ def main():
 
   annuary_data = AnnuaryData(args.output)
   process_image(args, annuary_data)
+  annuary_data.save(args.output)
 
 if __name__ == '__main__':
 

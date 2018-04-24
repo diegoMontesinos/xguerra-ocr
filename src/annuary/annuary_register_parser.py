@@ -3,7 +3,7 @@
 import re
 
 ONLY_NUMBERS           = re.compile(u'^[0-9]*$')
-ONLY_UPPERCASE_DOTS    = re.compile(u'^[A-Z. \(\)]*$')
+ONLY_UPPERCASE_DOTS    = re.compile(u'^[A-Z. \(\)\/]*$')
 ONLY_UPPERCASE_LETTERS = re.compile(u'^[A-Z]*$')
 
 def parse_register_str(register_str):
