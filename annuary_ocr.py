@@ -5,12 +5,17 @@
 import pytesseract
 import argparse
 import cv2
+import os
 from src import *
 
-PAGE_ROI = (0, 0, 3510, 5225)
+PAGE_ROI = (80, 0, 3350, 5220)
 
 def process_image(args, annuary_data):
   print('Processing file ' + args.input + '...')
+
+  if not os.path.exists(args.input):
+    print('Error on reading or file input dont exist. ( ∩ ︵ ∩ )')
+    return
 
   # Read image source and crop it
   image_src = cv2.imread(args.input)
@@ -41,7 +46,6 @@ def process_image(args, annuary_data):
 
   # Fix errors if exist
   if len(reading_errors) > 0:
-    print('( ∩ ︵ ∩ )')
     fix_reading_errors(reading_errors, annuary_data)
   else:
     print('Perfect (✿ ♥ ‿ ♥ )!')
@@ -50,7 +54,6 @@ def process_rows(img_col, rows, annuary_data, args):
 
   reading_errors = []
 
-  # Iterate all rows
   for i, row in enumerate(rows):
     
     # Get ROI (region of interest) and execute OCR
