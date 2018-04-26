@@ -4,21 +4,21 @@ import numpy as np
 import cv2
 from ..utils import *
 
-MAX_WIDTH_ROW = 1030
-MIN_ROW_AREA = 12000
+MIN_ROW_AREA = 7700
 MAX_HEIGHT_ROW = 60
+MAX_X_ROW = 40
 
 def find_rows_on_annuary(binary_image, args):
 
   # Dilate image
-  kernel_dilation = np.ones((1, 15), np.uint8)
+  kernel_dilation = np.ones((1, 50), np.uint8)
   image_dilation = cv2.dilate(binary_image, kernel_dilation, iterations=1)
 
   if args.debug:
     show_scaled_image('rows dilation', image_dilation, 0.4)
   
   # Close image
-  kernel_closing = np.ones((1, 95), np.uint8)
+  kernel_closing = np.ones((1, 180), np.uint8)
   image_closing = cv2.morphologyEx(image_dilation, cv2.MORPH_CLOSE, kernel_closing)
 
   if args.debug:
@@ -32,28 +32,30 @@ def find_rows_on_annuary(binary_image, args):
     show_scaled_image('contours rows', contours_img, 0.4)
 
   # Create rows and sort them
+  height, width = binary_image.shape[:2]
+
   rows = []
   for contour in contours:
     row = cv2.boundingRect(contour)
 
     if not is_valid_annuary_row(row):
       continue
-
+    
     x, y, w, h = row
-    if w >= MAX_WIDTH_ROW:
-      rows.append((x, y, MAX_WIDTH_ROW, h))
-      rows.append((x + MAX_WIDTH_ROW + 3, y, w - MAX_WIDTH_ROW, h))
-    else:
-      rows.append(row)
+    rows.append((x, y, width, h))
   
   rows.sort(key=lambda row: row[1])
-  rows.sort(key=lambda row: row[0])
+
+  if args.debug:
+    boxes_img = draw_boxes(binary_image, rows, (0, 255, 0))
+    show_scaled_image('rows', boxes_img, 0.4)
   
   return rows
 
 def is_valid_annuary_row(row):
+  x = row[0]
   w = row[2]
   h = row[3]
 
   area = w * h
-  return (area >= MIN_ROW_AREA) and (h <= MAX_HEIGHT_ROW)
+  return (x <= MAX_X_ROW) and (area >= MIN_ROW_AREA) and (h <= MAX_HEIGHT_ROW)

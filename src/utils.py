@@ -2,6 +2,10 @@
 
 import cv2
 
+def crop_roi(image_src, roi):
+  x, y, w, h = roi
+  return image_src[y:y+h, x:x+w]
+
 def show_scaled_image(title, img, scale):
 
   height, width = img.shape[:2]
@@ -32,6 +36,6 @@ def draw_boxes(binary_image, boxes, stroke):
   boxes_img = cv2.merge((channel, channel, channel))
   for box in boxes:
     x, y, w, h = box
-    cv2.rectangle(boxes_img, (x, y), (x + w, y + h), stroke, 1)
+    cv2.rectangle(boxes_img, (x, y), (x + w, y + h), stroke, 2)
   
   return boxes_img

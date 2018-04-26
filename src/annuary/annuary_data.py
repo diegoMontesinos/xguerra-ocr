@@ -24,12 +24,17 @@ class AnnuaryData:
         }
         self.add_register(register)
   
+      print('Loaded ' + str(len(self.data)) + ' registers!')
+  
+  def print_status(self):
+    print 'Status'
+  
   def add_register(self, register):
     if register['id'][0] in self.data:
-      return
+      return False
     
     self.data[register['id'][0]] = register
-    print('Added register: ' + str(register))
+    return True
   
   def save(self, csvpath=None):
     if csvpath == None:
