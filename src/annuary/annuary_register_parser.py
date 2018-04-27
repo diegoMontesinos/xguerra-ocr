@@ -7,7 +7,7 @@ MAX_NUM_ID = 9845
 
 NUM_ID_PATTERN = re.compile(u'^[0-9]*$')
 LET_ID_PATTERN = re.compile(u'^[A-Z]*$')
-PEOPLE_NAME_PATTERN = re.compile(u'^[A-Z0-9+*". \(\)\/]*$')
+PERSON_NAME_PATTERN = re.compile(u'^[A-Z0-9+*". \(\)\/]*$')
 COMMUNITY_NAME_PATTERN = re.compile(u'^[A-Z0-9-+*. \(\)\/]*$')
 PARENTHESIS_GROUP = re.compile(u'\(([A-Za-z0-9]+)\)')
 NUMBERS_GROUP = re.compile(u'\d+')
@@ -58,7 +58,7 @@ def get_register_id(tokens):
 
 def get_register_type(register_id):
   if register_id[0] < COMMUNITY_START_ID:
-    return 'people'
+    return 'person'
   else:
     return 'community'
   
@@ -71,15 +71,15 @@ def get_register_name(register_str, register_type, tokens):
   # Sanitize name
   name = name.replace(',', '.').replace('\x80', '').replace('\x98', '').replace('\x99', '')
 
-  is_people = (register_type == 'people')
-  if not is_people:
+  is_person = (register_type == 'person')
+  if not is_person:
     name = replace_char_at_index(name, '*', 0)
 
   # Validate name
-  if is_people and (not matches(PEOPLE_NAME_PATTERN, name)):
+  if is_person and (not matches(PERSON_NAME_PATTERN, name)):
     raise Exception('Invalid name: ' + name)
   
-  if (not is_people) and (not matches(COMMUNITY_NAME_PATTERN, name)):
+  if (not is_person) and (not matches(COMMUNITY_NAME_PATTERN, name)):
     raise Exception('Invalid name: ' + name)
 
   return name
