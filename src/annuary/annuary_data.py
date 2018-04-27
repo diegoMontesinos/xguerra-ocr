@@ -3,41 +3,43 @@
 import csv
 import os
 
+CSV_ANNUARY_FIELDNAMES = [ 'num_id', 'text_id', 'name', 'type', 'info' ]
+
 class AnnuaryData:
 
   def __init__(self, csvpath=None):
     self.data = {}
 
-    if (csvpath != None) and os.path.exists(csvpath):
+    should_read = (csvpath != None) and os.path.exists(csvpath)
+    if should_read:
       self.load_from_file(csvpath)
-    
+  
   def load_from_file(self, csvpath):
     print('Loading data from file ' + csvpath + '...\n')
     
     with open(csvpath, 'rb') as csvfile:
-      annuary_reader = csv.reader(csvfile, delimiter=',')
-      for row in annuary_reader:
-        register = {
-          'id': (int(row[0]), row[1]),
-          'name': row[2],
-          'type': row[3]
-        }
+      annuary_reader = csv.DictReader(csvfile, delimiter=',',
+                                               quotechar="'",
+                                               quoting=csv.QUOTE_NONNUMERIC)
+
+      for register in annuary_reader:
+        register['num_id'] = int(register['num_id'])
         self.add_register(register)
   
       print('Loaded ' + str(len(self.data)) + ' registers!')
   
   def print_status(self):
-    print 'Status'
+    pass
   
   def add_register(self, register):
-    if register['id'][0] in self.data:
+    if register['num_id'] in self.data:
       return False
     
-    self.data[register['id'][0]] = register
+    self.data[register['num_id']] = register
     return True
   
   def save(self, csvpath=None):
-    if csvpath == None:
+    if not csvpath:
       return
     
     print('Saving data to file ' + csvpath + '...')
@@ -48,15 +50,16 @@ class AnnuaryData:
       os.makedirs(basedir)
     
     with open(csvpath, 'wb') as csvfile:
-      annuary_writer = csv.writer(csvfile, delimiter=',')
+      annuary_writer = csv.DictWriter(csvfile, fieldnames=CSV_ANNUARY_FIELDNAMES,
+                                               delimiter=',',
+                                               quotechar="'",
+                                               quoting=csv.QUOTE_NONNUMERIC)
+
+      annuary_writer.writeheader()
 
       sorted_data = sorted(self.data)
-
       for register_id in sorted_data:
         register = self.data[register_id]
-        annuary_writer.writerow([
-          register['id'][0],
-          register['id'][1],
-          register['name'],
-          register['type']
-        ])
+        annuary_writer.writerow(register)
+    
+    print('File saved!')

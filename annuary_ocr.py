@@ -47,6 +47,7 @@ def process_image(args, annuary_data):
   # Fix errors if exist
   if len(reading_errors) > 0:
     fix_reading_errors(reading_errors, annuary_data)
+    print('Thanks (✿ ♥ ‿ ♥ )!')
   else:
     print('Perfect (✿ ♥ ‿ ♥ )!')
 
