@@ -106,11 +106,21 @@ def user_fix_error(reading_error, annuary_data):
     print('Upsis, it seems that you enter an invalid register. Try again.')
     user_fix_error(reading_error, annuary_data)
 
+def print_welcome_message():
+  print('\n:::::::::::::::::::::::::::::::::::::::::::::::::::::::::')
+  print('::                     ANNUARY OCR                     ::')
+  print(':: A digitalization of the annuary section from the    ::')
+  print(':: Francoise Xavier Guerra database.                   ::')
+  print('::                                                     ::')
+  print(':: Lucía Granados (luciagranadosriveros@gmail.com)     ::')
+  print(':: Diego Montesinos (diegomontesinos@ciencias.unam.mx) ::')
+  print(':::::::::::::::::::::::::::::::::::::::::::::::::::::::::\n')
+  
 # Main script
 def main():
 
   # Config parser
-  parser = argparse.ArgumentParser(description='Digitalization of Annuary-part from Francois-Xavier Guerra database.')
+  parser = argparse.ArgumentParser(description='A digitalization of annuary section from Francois-Xavier Guerra database.')
   parser.add_argument('-i', '--input', help='Input image file')
   parser.add_argument('-o', '--output', help='Output CSV file', default='csv/annuary.csv')
   parser.add_argument('-d', '--debug', help='Enable debug option', action='store_true')
@@ -118,14 +128,16 @@ def main():
 
   args = parser.parse_args()
 
+  if (not args.input) and (not args.status):
+    print('error: argument -i/--input is required')
+    return
+  
+  print_welcome_message()
+  
   annuary_data = AnnuaryData(args.output)
 
   if args.status:
     annuary_data.print_status()
-    return
-
-  if not args.input:
-    print('error: argument -i/--input is required')
     return
   
   process_image(args, annuary_data)
