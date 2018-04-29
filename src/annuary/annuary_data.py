@@ -5,6 +5,9 @@ import os
 
 CSV_ANNUARY_FIELDNAMES = [ 'num_id', 'text_id', 'name', 'type', 'info' ]
 
+PERSON_START_ID = 0
+COMMUNITY_START_ID = 8999
+
 class AnnuaryData:
 
   def __init__(self, csvpath=None):
@@ -29,7 +32,45 @@ class AnnuaryData:
       print('Loaded ' + str(len(self.data)) + ' registers!')
   
   def print_status(self):
-    pass
+    print('ANNUARY DIGITALIZATION STATUS:\n')
+    print('Saved ' + str(len(self.data)) + ' registers.')
+    print('Person: ' + str(self.count_by_type('person')) + ' registers.')
+    print('Community: ' + str(self.count_by_type('community')) + ' registers.\n')
+
+    print('ID Missings:')
+    self.print_missings(self.registers_by_type('person'), PERSON_START_ID)
+    self.print_missings(self.registers_by_type('community'), COMMUNITY_START_ID)
+  
+  def count_by_type(self, register_type):
+    count = 0
+
+    for register_id in self.data:
+      register = self.data[register_id]
+      if register['type'] == register_type:
+        count += 1
+    
+    return count
+  
+  def registers_by_type(self, register_type):
+    registers = []
+
+    sorted_ids = sorted(self.data)
+    for register_id in sorted_ids:
+      register = self.data[register_id]
+      if register['type'] == register_type:
+        registers.append(register)
+    
+    return registers
+  
+  def print_missings(self, registers, init_id):
+    last_id = init_id
+
+    for register in registers:
+      range_diff = range(last_id, register['num_id'])
+      if len(range_diff) > 1:
+        print range_diff[1:]
+
+      last_id = register['num_id']
   
   def add_register(self, register):
     if register['num_id'] in self.data:
@@ -57,8 +98,8 @@ class AnnuaryData:
 
       annuary_writer.writeheader()
 
-      sorted_data = sorted(self.data)
-      for register_id in sorted_data:
+      sorted_ids = sorted(self.data)
+      for register_id in sorted_ids:
         register = self.data[register_id]
         annuary_writer.writerow(register)
     
