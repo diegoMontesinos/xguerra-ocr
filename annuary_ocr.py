@@ -89,7 +89,7 @@ def user_fix_error(reading_error, annuary_data):
   # Get ROI image and display
   roi = crop_roi(img_col, row)
   cv2.imshow('Bad readed row', roi)
-  cv2.waitKey(1)
+  cv2.waitKey(0)
 
   # Wait user input and destroy the window
   user_input = raw_input('Enter the fixed register: ')
@@ -145,5 +145,5 @@ def main():
 
 if __name__ == '__main__':
 
-  pytesseract.pytesseract.tesseract_cmd = '/usr/local/bin/tesseract'
+  pytesseract.pytesseract.tesseract_cmd = '/usr/bin/tesseract'
   main()
