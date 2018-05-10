@@ -63,10 +63,6 @@ def process_col(img_col, annuary_data, args):
       #img_col
     except Exception as exception:
       bad += 1
-  
-  print bad
-  print len(blocks)
-  print '--'
 
 def print_welcome_message():
   print('\n:::::::::::::::::::::::::::::::::::::::::::::::::::::::::')

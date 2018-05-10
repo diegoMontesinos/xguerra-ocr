@@ -82,7 +82,7 @@ def find_blocks_on_diary_col(img_col, debug):
   image_open = cv2.morphologyEx(img_col, cv2.MORPH_OPEN, kernel_open)
 
   # Close image
-  kernel_close = np.ones((1, 200), np.uint8)
+  kernel_close = np.ones((2, 200), np.uint8)
   image_dilation = cv2.morphologyEx(image_open, cv2.MORPH_CLOSE, kernel_close)
 
   if debug:
