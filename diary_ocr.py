@@ -101,5 +101,5 @@ def main():
 
 if __name__ == '__main__':
 
-  pytesseract.pytesseract.tesseract_cmd = '/usr/local/bin/tesseract'
+  pytesseract.pytesseract.tesseract_cmd = '/usr/bin/tesseract'
   main()
