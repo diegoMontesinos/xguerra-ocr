@@ -12,14 +12,19 @@ COMMUNITY_NAME_PATTERN = re.compile(u'^[A-Z0-9-+*. \(\)\/]*$')
 PARENTHESIS_GROUP = re.compile(u'\(([A-Za-z0-9]+)\)')
 NUMBERS_GROUP = re.compile(u'\d+')
 
-def parse_register_str(register_str):
+class AnnuaryParsingException(Exception):
+
+  def __init__(self, message):
+    Exception.__init__(self, message)
+
+def parse_annuary_register_str(register_str):
 
   # Make a single line and tokenize
   register_str = register_str.replace('\n', ' ')
   tokens = tokenize(register_str)
 
   if len(tokens) < 3:
-    raise Exception('Insuficient tokens at register: ' + register_str)
+    raise AnnuaryParsingException('Insuficient tokens at register: ' + register_str)
 
   # Get fields
   register_id   = get_register_id(tokens)
@@ -46,13 +51,13 @@ def get_register_id(tokens):
 
   # Validate
   if (not matches(LET_ID_PATTERN, letters_id)) or (len(letters_id) < 2):
-    raise Exception('Bad letters id: ' + letters_id)
+    raise AnnuaryParsingException('Bad letters id: ' + letters_id)
   
   if not matches(NUM_ID_PATTERN, numbers_id):
-    raise Exception('Bad numbers id: ' + numbers_id)
+    raise AnnuaryParsingException('Bad numbers id: ' + numbers_id)
 
   if int(numbers_id) > MAX_NUM_ID:
-    raise Exception('Numbers id out of range: ' + numbers_id)
+    raise AnnuaryParsingException('Numbers id out of range: ' + numbers_id)
   
   return (int(numbers_id), letters_id)
 
@@ -77,10 +82,10 @@ def get_register_name(register_str, register_type, tokens):
 
   # Validate name
   if is_person and (not matches(PERSON_NAME_PATTERN, name)):
-    raise Exception('Invalid name: ' + name)
+    raise AnnuaryParsingException('Invalid name: ' + name)
   
   if (not is_person) and (not matches(COMMUNITY_NAME_PATTERN, name)):
-    raise Exception('Invalid name: ' + name)
+    raise AnnuaryParsingException('Invalid name: ' + name)
 
   return name
 

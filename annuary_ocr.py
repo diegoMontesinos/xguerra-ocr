@@ -65,7 +65,7 @@ def process_rows(img_col, rows, annuary_data, args):
 
     # Parser and catch errors
     try:
-      register = parse_register_str(register_str)
+      register = parse_annuary_register_str(register_str)
       added = annuary_data.add_register(register)
 
       if added:
@@ -97,7 +97,7 @@ def user_fix_error(reading_error, annuary_data):
 
   # Try to parse user input and catch errors to try again 
   try:
-    register = parse_register_str(user_input)
+    register = parse_annuary_register_str(user_input)
     added = annuary_data.add_register(register)
 
     if added:

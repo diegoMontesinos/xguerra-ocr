@@ -54,7 +54,6 @@ def find_columns_on_diary(binary_image, debug):
   if debug:
     boxes_img = draw_boxes(binary_image, cols, (0, 255, 0))
     show_scaled_image('cols', boxes_img, 0.4)
-    cv2.imwrite('cols.jpg', boxes_img)
 
   return cols
 

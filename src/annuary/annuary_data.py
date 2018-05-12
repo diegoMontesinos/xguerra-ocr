@@ -21,9 +21,7 @@ class AnnuaryData:
     print('Loading data from file ' + csvpath + '...\n')
     
     with open(csvpath, 'rb') as csvfile:
-      annuary_reader = csv.DictReader(csvfile, delimiter=',',
-                                               quotechar="'",
-                                               quoting=csv.QUOTE_NONNUMERIC)
+      annuary_reader = csv.DictReader(csvfile, delimiter=',', quotechar="'", quoting=csv.QUOTE_NONNUMERIC)
 
       for register in annuary_reader:
         register['num_id'] = int(register['num_id'])
@@ -61,6 +59,20 @@ class AnnuaryData:
         registers.append(register)
     
     return registers
+  
+  def search_by_num_id(self, num_id):
+    if not (num_id in self.data):
+      return None
+
+    return self.data[num_id]
+  
+  def search_by_id(self, text_id, num_id):
+    register = self.data[num_id]
+
+    if (not register) or (register['text_id'] == text_id):
+      return None
+    
+    return register
   
   def print_missings(self, registers, init_id):
     last_id = init_id
