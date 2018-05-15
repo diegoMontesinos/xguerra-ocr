@@ -9,7 +9,8 @@ import numpy as np
 import os
 from src import AnnuaryData, crop_roi, show_scaled_image, fix_image_rotation, \
                 binarize_image, find_columns_on_diary, find_blocks_on_diary_col, \
-                parse_annuary_register_str, AnnuaryParsingException, get_tesseract_cmd
+                parse_annuary_register_str, AnnuaryParsingException, get_tesseract_cmd, \
+                find_diary_content
 
 PAGE_ROI = (100, 200, 3400, 4650)
 
@@ -53,15 +54,23 @@ class DiaryOCR:
 
     # Find blocks from the col
     blocks = find_blocks_on_diary_col(img_col, self.debug)
-
     for block in blocks:
       self.process_block(img_col, block)
   
   def process_block(self, img_col, block):
+    has_header = (block[1] != None)
+    if not has_header:
+      return
 
-    # Get header ROI and execute OCR
+    # Get header and content image with ROI
     header_img = crop_roi(img_col, block[0])
+    content_img = crop_roi(img_col, block[1])
 
+    self.read_content(content_img)
+
+  def read_header(self, header_img):
+
+    # Execute OCR
     bytes_readed = pytesseract.image_to_string(header_img)
     readed_str = bytes_readed.encode('utf-8')
 
@@ -82,6 +91,10 @@ class DiaryOCR:
       print exception
     
     print '--'
+  
+  def read_content(self, content_img):
+    #show_scaled_image('content', content_img, 1.0)
+    find_diary_content(content_img, self.debug)
 
 def print_welcome_message():
   print('\n:::::::::::::::::::::::::::::::::::::::::::::::::::::::::')
