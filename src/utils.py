@@ -2,6 +2,15 @@
 
 import cv2
 import numpy as np
+from subprocess import check_output
+
+def get_tesseract_cmd():
+  try:
+    cmd = check_output(['which', 'tesseract'])
+  except Exception as exception:
+    return ''
+  
+  return cmd.replace('\n', '')
 
 def crop_roi(image_src, roi):
   x, y, w, h = roi
