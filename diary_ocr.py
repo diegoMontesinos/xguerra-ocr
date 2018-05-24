@@ -10,7 +10,7 @@ import os
 from src import AnnuaryData, crop_roi, show_scaled_image, fix_image_rotation, \
                 binarize_image, find_columns_on_diary, find_blocks_on_diary_col, \
                 parse_annuary_register_str, AnnuaryParsingException, get_tesseract_cmd, \
-                find_diary_content
+                find_diary_content_modules
 
 PAGE_ROI = (100, 200, 3400, 4650)
 
@@ -42,7 +42,6 @@ class DiaryOCR:
     
     # Get columns
     cols = find_columns_on_diary(binary_image, self.debug)
-
     for col in cols:
       img_col = crop_roi(binary_image, col)
       self.process_col(img_col)
@@ -66,7 +65,7 @@ class DiaryOCR:
     header_img = crop_roi(img_col, block[0])
     content_img = crop_roi(img_col, block[1])
 
-    self.read_content(content_img)
+    content = self.read_content(content_img)
 
   def read_header(self, header_img):
 
@@ -93,8 +92,19 @@ class DiaryOCR:
     print '--'
   
   def read_content(self, content_img):
+
+    #if self.debug:
+    
+    content_modules = find_diary_content_modules(content_img, self.debug)
+    if len(content_modules) == 0:
+      print ':('
+      #show_scaled_image('content', content_img, 1.0)
+    #for content_module in content_modules:
+    #  print content_module
+    #print len(content_modules)
+    #print '--'
+
     #show_scaled_image('content', content_img, 1.0)
-    find_diary_content(content_img, self.debug)
 
 def print_welcome_message():
   print('\n:::::::::::::::::::::::::::::::::::::::::::::::::::::::::')
