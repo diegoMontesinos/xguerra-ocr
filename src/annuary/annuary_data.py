@@ -95,7 +95,7 @@ class AnnuaryData:
     if not csvpath:
       return
     
-    print('Saving data to file ' + csvpath + '...')
+    print('Saving annuary data to file ' + csvpath + '...')
 
     # Create directories if dont exist
     basedir = os.path.dirname(csvpath)
