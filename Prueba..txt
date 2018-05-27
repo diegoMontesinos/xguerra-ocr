@@ -1,2 +1,8 @@
 Hola Diego
 Hola Malu, saca las chelas
+:):) siii hay en  mi casa para el ratito. Querido DIego del futuro has de saber que tengo 2 commits en la linea pero no he logrado 
+hacer push exitosamente, creo que es porque cuando hago pull pa emparejarnos me pregunta si quiero merge y que deje un
+mensaje, pero entonces me da cosa que sincronice a mis archivos y entonces borre algo.... que ahora que lo pienso no tiene tanto 
+sentido ¿no? mejor me espero.
+quiza no estoy entendiendo git, lo que si es que ya hablo cholo jajaja watcha vato mis merges!!
+
