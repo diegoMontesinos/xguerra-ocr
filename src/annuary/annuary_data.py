@@ -18,7 +18,8 @@ class AnnuaryData:
       self.load_from_file(csvpath)
   
   def load_from_file(self, csvpath):
-    print('Loading data from file ' + csvpath + '...\n')
+    print('\nANNUARY DATA\n')
+    print('Loading data from file: ' + csvpath + '...')
     
     with open(csvpath, 'rb') as csvfile:
       annuary_reader = csv.DictReader(csvfile, delimiter=',', quotechar="'", quoting=csv.QUOTE_NONNUMERIC)
@@ -28,9 +29,11 @@ class AnnuaryData:
         self.add_register(register)
   
       print('Loaded ' + str(len(self.data)) + ' registers!')
+    
+    print('--------------')
   
   def print_status(self):
-    print('ANNUARY DIGITALIZATION STATUS:\n')
+    print('\nANNUARY DIGITALIZATION STATUS\n')
     print('Saved ' + str(len(self.data)) + ' registers.')
     print('Person: ' + str(self.count_by_type('person')) + ' registers.')
     print('Community: ' + str(self.count_by_type('community')) + ' registers.\n')
@@ -89,6 +92,14 @@ class AnnuaryData:
       return False
     
     self.data[register['num_id']] = register
+    return True
+  
+  def update_register(self, register):
+    num_id = register['num_id']
+    if not num_id in self.data:
+      return False
+    
+    self.data[num_id] = register
     return True
   
   def save(self, csvpath=None):

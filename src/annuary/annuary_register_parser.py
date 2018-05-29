@@ -3,7 +3,7 @@
 import re
 
 COMMUNITY_START_ID = 9000
-MAX_NUM_ID = 9845
+MAX_NUM_ID = 9850
 
 NUM_ID_PATTERN = re.compile(u'^[0-9]*$')
 LET_ID_PATTERN = re.compile(u'^[A-Z]*$')
@@ -14,8 +14,15 @@ NUMBERS_GROUP = re.compile(u'\d+')
 
 class AnnuaryParsingException(Exception):
 
-  def __init__(self, message):
+  INSUFICIENT_TOKENS = 1
+  BAD_LETTER_ID = 2
+  BAD_NUMERIC_ID = 3
+  ID_OUT_OF_RANGE = 4
+  IVALID_NAME = 5
+
+  def __init__(self, message, code):
     Exception.__init__(self, message)
+    self.error_code = code
 
 def parse_annuary_register_str(register_str):
 
@@ -24,7 +31,8 @@ def parse_annuary_register_str(register_str):
   tokens = tokenize(register_str)
 
   if len(tokens) < 3:
-    raise AnnuaryParsingException('Insuficient tokens at register: ' + register_str)
+    msg = 'Insuficient tokens at register: ' + register_str
+    raise AnnuaryParsingException(msg, AnnuaryParsingException.INSUFICIENT_TOKENS)
 
   # Get fields
   register_id   = get_register_id(tokens)
@@ -43,23 +51,49 @@ def parse_annuary_register_str(register_str):
     'info'    : ' '.join(register_info).strip()
   }
 
+def parse_num_id_only(register_str):
+
+  # Make a single line and tokenize
+  register_str = register_str.replace('\n', ' ')
+  tokens = tokenize(register_str)
+
+  if len(tokens) < 3:
+    msg = 'Insuficient tokens at register: ' + register_str
+    raise AnnuaryParsingException(msg, AnnuaryParsingException.INSUFICIENT_TOKENS)
+  
+  return get_register_number_id(tokens)
+
 def get_register_id(tokens):
 
   # Get and validate id
+  letters_id = get_register_letters_id(tokens)
+  numbers_id = get_register_number_id(tokens)
+  
+  return (numbers_id, letters_id)
+
+def get_register_letters_id(tokens):
   letters_id = tokens[0]
-  numbers_id = tokens[1]
 
   # Validate
   if (not matches(LET_ID_PATTERN, letters_id)) or (len(letters_id) < 2):
-    raise AnnuaryParsingException('Bad letters id: ' + letters_id)
+    msg = 'Bad letters id: ' + letters_id
+    raise AnnuaryParsingException(msg, AnnuaryParsingException.BAD_LETTER_ID)
   
+  return letters_id
+
+def get_register_number_id(tokens):
+  numbers_id = tokens[1]
+
+  # Validate
   if not matches(NUM_ID_PATTERN, numbers_id):
-    raise AnnuaryParsingException('Bad numbers id: ' + numbers_id)
+    msg = 'Bad numbers id: ' + numbers_id
+    raise AnnuaryParsingException(msg, AnnuaryParsingException.BAD_NUMERIC_ID)
 
   if int(numbers_id) > MAX_NUM_ID:
-    raise AnnuaryParsingException('Numbers id out of range: ' + numbers_id)
+    msg = 'Numbers id out of range: ' + numbers_id
+    raise AnnuaryParsingException(msg, AnnuaryParsingException.ID_OUT_OF_RANGE)
   
-  return (int(numbers_id), letters_id)
+  return int(numbers_id)
 
 def get_register_type(register_id):
   if register_id[0] < COMMUNITY_START_ID:
@@ -82,10 +116,12 @@ def get_register_name(register_str, register_type, tokens):
 
   # Validate name
   if is_person and (not matches(PERSON_NAME_PATTERN, name)):
-    raise AnnuaryParsingException('Invalid name: ' + name)
+    msg = 'Invalid name: ' + name
+    raise AnnuaryParsingException(msg, AnnuaryParsingException.IVALID_NAME)
   
   if (not is_person) and (not matches(COMMUNITY_NAME_PATTERN, name)):
-    raise AnnuaryParsingException('Invalid name: ' + name)
+    msg = 'Invalid name: ' + name
+    raise AnnuaryParsingException(msg, AnnuaryParsingException.IVALID_NAME)
 
   return name
 
