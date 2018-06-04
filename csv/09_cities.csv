@@ -1,4 +1,5 @@
 'city_id','place_id','city'
+'__','__','sin ciudad'
 '01','AC','Cuba' 
 '02','AC','Costa Rica'
 '03','AC','Guatemala'  
