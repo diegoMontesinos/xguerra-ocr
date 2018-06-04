@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import csv
+
 class CatalogsData:
 
   CATALOGS_DESCRIPTION = {
@@ -41,4 +43,33 @@ class CatalogsData:
   }
 
   def __init__(self):
-    print CatalogsData.CATALOGS_DESCRIPTION
+    self.catalogs = {}
+
+    print('\nCATALOGS DATA\n')
+    for catalog_id in CatalogsData.CATALOGS_DESCRIPTION:
+      self.load_catalog(catalog_id, CatalogsData.CATALOGS_DESCRIPTION[catalog_id])
+    print('--------------')
+  
+  def load_catalog(self, catalog_id, catalog_description):
+    csvpath = 'csv/' + catalog_description['file'] + '.csv'
+
+    print('Loading catalog from file ' + csvpath + '...')
+
+    catalog = {
+      'header'    : catalog_description['header'],
+      'registers' : []
+    }
+
+    with open(csvpath, 'rb') as csvfile:
+      csvreader = csv.DictReader(csvfile, delimiter=',', quotechar="'", quoting=csv.QUOTE_NONNUMERIC)
+
+      for register in csvreader:
+        catalog['registers'].append(register)
+    
+    self.catalogs[catalog_id] = catalog
+  
+  def get(self, catalog_id):
+    if not catalog_id in self.catalogs:
+      return None
+
+    return self.catalogs[catalog_id]

@@ -12,8 +12,9 @@ CONTENT_OFFSET = 253
 MIN_CONTENT_ROW_HEIGHT = 15
 MIN_CONTENT_ROW_AREA = 2300
 MIN_CHAR_AREA = 4
+MIN_CHAR_HEIGHT = 6
 MAX_CHAR_WIDTH = 29
-AVG_CHAR_WIDTH = 21
+AVG_CHAR_WIDTH = 20
 AVG_SPACE_WIDTH = 23
 
 def find_columns_on_diary(binary_image, debug):
@@ -150,16 +151,19 @@ def is_separation_diary_row(row):
 
   return (x < MIN_SEPARATION_OFFSET) and (area > MIN_SEPARATION_AREA)
 
-def find_diary_content_modules(content_img, debug):
-  modules = []
+def get_diary_content_rows(content_img, debug):
+  content_rows = []
 
   rows = find_diary_content_rows(content_img, debug)
   for row in rows:
     content_row_img = crop_roi(content_img, row)
-    row_modules = get_modules_on_content_row(content_row_img, row, debug)
-    modules.append(row_modules)
+    row_modules = get_modules_on_content_row(content_row_img, debug)
+    content_rows.append({
+      'row'     : row,
+      'modules' : row_modules
+    })
   
-  return modules
+  return content_rows
 
 def find_diary_content_rows(content_img, debug):
 
@@ -183,13 +187,17 @@ def find_diary_content_rows(content_img, debug):
 
   rows.sort(key=lambda row:row[1])
 
+  if debug:
+    boxes_img = draw_boxes(content_img, rows, (0, 255, 0))
+    show_scaled_image('content rows', boxes_img, 1.0)
+
   return rows
 
 def is_valid_content_row(cnt):
   x, y, w, h = cv2.boundingRect(cnt)
   return (x < 50) and (h >= MIN_CONTENT_ROW_HEIGHT) and ((w * h) > MIN_CONTENT_ROW_AREA)
 
-def get_modules_on_content_row(content_row_img, offset, debug):
+def get_modules_on_content_row(content_row_img, debug):
 
   # Find chars contours
   kernel_close = np.ones((5, 4), np.uint8)
@@ -197,6 +205,7 @@ def get_modules_on_content_row(content_row_img, offset, debug):
 
   contours = cv2.findContours(image_close, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)[1]
   contours = [cnt for cnt in contours if cv2.contourArea(cnt) > MIN_CHAR_AREA]
+  contours = [cnt for cnt in contours if cv2.boundingRect(cnt)[3] > MIN_CHAR_HEIGHT]
 
   # Get bounding boxes, filter and sort
   rects = map(get_bounding_rect_char(content_row_img.shape[0]), contours)
@@ -204,7 +213,11 @@ def get_modules_on_content_row(content_row_img, offset, debug):
   rects.sort(key=lambda rect:rect[0])
   rects = merge_overlays_and_brokens(rects)
 
-  return get_modules_from_rects(content_row_img, offset, rects)
+  if debug:
+    boxes_img = draw_boxes(content_row_img, rects, (0, 255, 0))
+    show_scaled_image('char rects', boxes_img, 1.0)
+  
+  return get_modules_from_rects(rects)
 
 def get_bounding_rect_char(height):
   def bounding_rect_char(cnt):
@@ -241,14 +254,15 @@ def merge_overlays_and_brokens(rects):
     
     curr_w = current[2]
     x_space = rect[0] - (current[0] + curr_w)
-    if (curr_w < 14) and (x_space <= 6):
+    if (curr_w < 14) and (x_space <= 7):
       current = merge_rects(current, rect)
       continue
 
     merged_rects.append(current)
     current = rect
   
-  merged_rects.append(current)
+  if current:
+    merged_rects.append(current)
   
   return merged_rects
 
@@ -263,28 +277,39 @@ def merge_rects(rect_a, rect_b):
 
   return (x_a, y_a, stop_b - x_a, h_a)
 
-def get_modules_from_rects(content_row_img, offset, rects):
+def get_modules_from_rects(rects):
 
   modules = []
 
   # Process char rects
+  current = None
   last_x = None
   for rect in rects:
     x, y, w, h = rect
 
-    # Put num of spaces between last rect into modules
+    # Get num of spaces between last rect into modules
     x_space = 0 if not last_x else (x - last_x)
     last_x = (x + w)
     num_spaces = 0 if x_space <= AVG_SPACE_WIDTH else int(x_space / AVG_SPACE_WIDTH)
 
     if num_spaces > 0:
-      modules.append((num_spaces, None))
+      if current:
+        modules.append(current)
+        current = None
 
-    # Put num of chars in rect into modules
+      modules.append((num_spaces, None))
+    
+    # Get num of chars in rect into modules
     num_chars = 1
     if w > MAX_CHAR_WIDTH:
       num_chars = int(w / AVG_CHAR_WIDTH)
     
-    modules.append((num_chars, (x + offset[0], y + offset[1], w, h)))
+    if not current:
+      current = (num_chars, rect)
+    else:
+      current = (current[0] + num_chars, merge_rects(current[1], rect))
+  
+  if current:
+    modules.append(current)
 
   return modules

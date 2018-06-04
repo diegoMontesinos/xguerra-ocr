@@ -10,16 +10,23 @@ import os
 from src import AnnuaryData, DiaryData, crop_roi, show_scaled_image, \
                 fix_image_rotation, binarize_image, find_columns_on_diary, \
                 find_blocks_on_diary_col, parse_annuary_register_str, \
-                find_diary_content_modules, AnnuaryParsingException, \
-                get_tesseract_cmd, parse_num_id_only
+                get_diary_content_rows, AnnuaryParsingException, \
+                get_tesseract_cmd, parse_num_id_only, DiaryModuleParser, \
+                DiaryParsingException
 
-PAGE_ROI = (100, 200, 3400, 4650)
+import time
+import sys
 
 class DiaryOCR:
+
+  PAGE_ROI = (100, 200, 3400, 4650)
+  SPACE_CHAR = '_'
 
   def __init__(self, args):
     self.annuary_data = AnnuaryData(args.annuary)
     self.diary_data = DiaryData(args.output)
+
+    self.module_parser = DiaryModuleParser()
 
     self.input_path = args.input
     self.debug = args.debug
@@ -34,7 +41,7 @@ class DiaryOCR:
 
     # Read image source and crop it
     image_src = cv2.imread(self.input_path)
-    image_src = crop_roi(image_src, PAGE_ROI)
+    image_src = crop_roi(image_src, DiaryOCR.PAGE_ROI)
     image_src = fix_image_rotation(image_src)
     if self.debug:
       show_scaled_image('source', image_src, 0.4)
@@ -55,6 +62,8 @@ class DiaryOCR:
       img_col = crop_roi(binary_image, col)
       self.process_col(img_col)
 
+      #break
+
       col_num += 1
   
   def process_col(self, img_col):
@@ -68,20 +77,24 @@ class DiaryOCR:
 
     for block in blocks:
       self.process_block(img_col, block)
+      #break
   
   def process_block(self, img_col, block):
 
     # Get header
-    header_img = crop_roi(img_col, block[0])
-    header_register = self.read_header(header_img)
+    #header_img = crop_roi(img_col, block[0])
+    #header_register = self.read_header(header_img)
+
+    #if not header_register:
+    #  return
 
     has_content = (block[1] != None)
     if not has_content:
       return
 
     # Get content
-    #content_img = crop_roi(img_col, block[1])
-    #content = self.read_content(content_img)
+    content_img = crop_roi(img_col, block[1])
+    content = self.read_content(content_img)
 
     # Register in data
     #self.add_content(header_register, content)
@@ -113,6 +126,7 @@ class DiaryOCR:
       
       # Registered but not equal
       elif not self.are_registers_equals(readed_register, annuary_register):
+        return None
         return self.choose_register(header_img, readed_register, annuary_register)
 
       # Registered
@@ -120,6 +134,7 @@ class DiaryOCR:
         return readed_register
 
     except AnnuaryParsingException as exception:
+      return None
       return self.fix_annuary_register(header_img, readed_str, exception)
   
   def are_registers_equals(self, register_a, register_b):
@@ -187,52 +202,62 @@ class DiaryOCR:
     if self.debug:
       show_scaled_image('content', content_img, 1.0)
     
-    content_modules = find_diary_content_modules(content_img, self.debug)
-    
-    for content_module in content_modules:
-      module_str = self.read_content_module(content_img, content_module)
-      modules = self.slice_module_str(module_str)
+    content_rows = get_diary_content_rows(content_img, self.debug)
 
-  def read_content_module(self, content_img, content_module):
-    module_str = ''
+    for content_row in content_rows:
+      row_modules = content_row['modules']
+      row = content_row['row']
 
-    for char_module in content_module:
-      num_chars, char_rect = char_module
+      row_img = crop_roi(content_img, row)
+      row_str = self.read_content_row(row_img, row_modules)
+
+      modules = self.slice_row_str(row_str)
+
+      try:
+        self.module_parser.parse_modules(modules, self.annuary_data)
+      except DiaryParsingException as exception:
+        pass
+        #print exception
+      
+      #print '---'
+
+    #show_scaled_image('content', content_img, 1.0)
+
+  def read_content_row(self, row_img, row_modules):
+    row_str = ''
+
+    for content_module in row_modules:
+      num_chars, char_rect = content_module
 
       if not char_rect:
-        for i in range(num_chars):
-          module_str += ' '
+        row_str += (DiaryOCR.SPACE_CHAR * num_chars)
         continue
       
       # Execute OCR
-      char_img = crop_roi(content_img, char_rect)
+      char_img = crop_roi(row_img, char_rect)
 
-      config_str = '-c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789= '
-      if num_chars > 1:
-        config_str += ' --psm 8'
-      else:
-        config_str += ' --psm 10'
+      config_str = '-c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789= --psm 8'
       
       bytes_readed = pytesseract.image_to_string(char_img, config=config_str)
       readed_str = bytes_readed.encode('utf-8')
 
-      module_str += readed_str
+      row_str += readed_str
 
-    missing_spaces = 11 - (len(module_str) % 11)
+    missing_spaces = 11 - (len(row_str) % 11)
     for i in range(missing_spaces):
-      module_str += ' '
+      row_str += DiaryOCR.SPACE_CHAR
     
-    return module_str
+    return row_str
   
-  def slice_module_str(self, module_str):
+  def slice_row_str(self, row_str):
 
     modules = []
 
-    num_modules = len(module_str) / 11
+    num_modules = len(row_str) / 11
     for i in range(num_modules):
       init = i * 11
       stop = init + 10
-      modules.append(module_str[init:stop])
+      modules.append(row_str[init:stop])
 
     return modules
 
@@ -271,10 +296,15 @@ def main():
     return
   
   #print_welcome_message()
+
+  init_ts = time.time()
   
   # Create OCR and run
   ocr = DiaryOCR(args)
   ocr.start()
+
+  duration = time.time() - init_ts
+  print('Finish at ' + str(duration) + ' seconds.')
 
 if __name__ == '__main__':
   main()

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import re
+from ..utils import matches
 
 COMMUNITY_START_ID = 9000
 MAX_NUM_ID = 9850
@@ -159,6 +160,3 @@ def replace_char_at_index(str_val, char, index):
   list_str = list(str_val)
   list_str[index] = char
   return ''.join(list_str)
-
-def matches(pattern, str_val):
-  return pattern.match(str_val) != None

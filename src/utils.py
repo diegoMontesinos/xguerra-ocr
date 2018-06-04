@@ -99,3 +99,6 @@ def get_angle_contour(contour):
     angle = -angle
   
   return angle
+
+def matches(pattern, str_val):
+  return pattern.match(str_val) != None
