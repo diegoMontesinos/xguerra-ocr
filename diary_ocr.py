@@ -15,7 +15,6 @@ from src import AnnuaryData, DiaryData, crop_roi, show_scaled_image, \
                 DiaryParsingException
 
 import time
-import sys
 
 class DiaryOCR:
 
@@ -51,33 +50,29 @@ class DiaryOCR:
     if self.debug:
       show_scaled_image('binary', binary_image, 0.4)
     
-    # Get columns and process
+    # Get columns
     cols = find_columns_on_diary(binary_image, self.debug)
     print('Detected ' + str(len(cols)) + ' columns.')
 
-    col_num = 1
-    for col in cols:
-      print('\nProcessing ' + str(col_num) + '/' + str(len(cols)) + ' column...')
+    # Process each column
+    for i in range(len(cols)):
+      print('\nProcessing ' + str(i + 1) + '/' + str(len(cols)) + ' column...')
 
-      img_col = crop_roi(binary_image, col)
+      img_col = crop_roi(binary_image, cols[i])
       self.process_col(img_col)
-
-      #break
-
-      col_num += 1
   
   def process_col(self, img_col):
 
     if self.debug:
       show_scaled_image('col', img_col, 0.4)
     
-    # Find blocks from the column and process
+    # Find blocks from the column
     blocks = find_blocks_on_diary_col(img_col, self.debug)
     print('  Detected ' + str(len(blocks)) + ' blocks.')
 
+    # Process each block
     for block in blocks:
       self.process_block(img_col, block)
-      #break
   
   def process_block(self, img_col, block):
 
@@ -88,6 +83,7 @@ class DiaryOCR:
     #if not header_register:
     #  return
 
+    # Check if has content
     has_content = (block[1] != None)
     if not has_content:
       return
@@ -106,9 +102,9 @@ class DiaryOCR:
     bytes_readed = pytesseract.image_to_string(header_img, config=config_str)
     readed_str = bytes_readed.encode('utf-8')
 
-    return self.process_readed_str(header_img, readed_str)
+    return self.process_annuary_str(header_img, readed_str)
 
-  def process_readed_str(self, header_img, readed_str):
+  def process_annuary_str(self, header_img, readed_str):
 
     # Try parse header and catch errors
     try:
@@ -180,12 +176,12 @@ class DiaryOCR:
     
     user_should_fix = not annuary_register
     if user_should_fix:
-      return self.user_fix_error(header_img, exception)
+      return self.user_fix_annuary_error(header_img, exception)
 
     return annuary_register
   
-  def user_fix_error(self, header_img, exception):
-    print('  ---\n  Please, help me to fix the following error (● ω ●):')
+  def user_fix_annuary_error(self, header_img, exception):
+    print('  ---\n  Please, help me to fix the following annuary exception (● ω ●):')
     print('  ' + str(exception))
 
     # Show image
@@ -195,33 +191,33 @@ class DiaryOCR:
     user_input = raw_input('  Enter the fixed register: ')
     cv2.destroyAllWindows()
 
-    return self.process_readed_str(header_img, user_input)
+    return self.process_annuary_str(header_img, user_input)
 
   def read_content(self, content_img):
 
     if self.debug:
       show_scaled_image('content', content_img, 1.0)
-    
+
+    # Get each content row
     content_rows = get_diary_content_rows(content_img, self.debug)
 
+    # Process each content row
+    content = []
     for content_row in content_rows:
-      row_modules = content_row['modules']
-      row = content_row['row']
+      content += self.process_content_row(content_img, content_row)
+    
+    return content
 
-      row_img = crop_roi(content_img, row)
-      row_str = self.read_content_row(row_img, row_modules)
+  def process_content_row(self, content_img, content_row):
 
-      modules = self.slice_row_str(row_str)
+    row_modules = content_row['modules']
+    row = content_row['row']
 
-      try:
-        self.module_parser.parse_modules(modules, self.annuary_data)
-      except DiaryParsingException as exception:
-        pass
-        #print exception
-      
-      #print '---'
+    # Crop and read the content
+    row_img = crop_roi(content_img, row)
+    row_str = self.read_content_row(row_img, row_modules)
 
-    #show_scaled_image('content', content_img, 1.0)
+    return self.process_content_row_str(row_img, row_str)
 
   def read_content_row(self, row_img, row_modules):
     row_str = ''
@@ -249,6 +245,18 @@ class DiaryOCR:
     
     return row_str
   
+  def process_content_row_str(self, row_img, row_str):
+
+    # Get the readed modules and parse them
+    modules = self.slice_row_str(row_str)
+    try:
+      parsed_modules = self.module_parser.parse_modules(modules, self.annuary_data)
+    except DiaryParsingException as exception:
+      print('    ' + str(modules))
+      return self.user_fix_modules_error(row_img, exception)
+    
+    return parsed_modules
+  
   def slice_row_str(self, row_str):
 
     modules = []
@@ -260,6 +268,18 @@ class DiaryOCR:
       modules.append(row_str[init:stop])
 
     return modules
+
+  def user_fix_modules_error(self, row_img, exception):
+    print('  ' + str(exception))
+
+    # Show image
+    cv2.imshow('Content row image', row_img)
+    cv2.waitKey(10)
+
+    user_input = raw_input('  Enter the fixed register: ')
+    cv2.destroyAllWindows()
+
+    return self.process_content_row_str(row_img, user_input)
 
 def print_welcome_message():
   print('\n:::::::::::::::::::::::::::::::::::::::::::::::::::::::::')

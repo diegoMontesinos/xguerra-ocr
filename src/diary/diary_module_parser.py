@@ -4,11 +4,9 @@ import re
 from ..utils import matches
 from ..catalogs_data import CatalogsData
 
-import sys
-
 class DiaryParsingException(Exception):
 
-  MODULES_LEN_EXCEED = 1
+  MODULES_NUMBER_EXCEEDED = 1
   MODULE_TYPE_NOT_RECOGNIZED = 2
   BAD_ZONE_STRING = 3
   BAD_YEAR = 4
@@ -77,23 +75,58 @@ class DiaryModuleParser:
   YEAR_PATTERN = re.compile(u'^[0-9]*$')
   NUM_ID_PATTERN = re.compile(u'^[0-9]*$')
 
+  KNOWN_CATALOG_ISSUES = {
+    3  : { 'NE': 'ME', 'NI': 'MI', 'NO': 'MO', 'OR': 'QR', 'OU': 'QU', 'U5': 'US',
+           '5I': 'SI', '5L': 'SL', '5O': 'SO', '8C': 'BC', 'T8': 'TB', '0': 'O',
+           '1': 'I', 'OF': 'DF', '6T': 'GT'
+          },
+    2  : { 'O': '0', 'Z': '2', 'S': '5', 'G': '6' },
+    5  : { 'O': '0', 'Z': '2', 'S': '5', 'G': '6' },
+    6  : { 'O': '0', 'Z': '2', 'S': '5', 'G': '6' },
+    7  : { 'O': '0', 'Z': '2', 'S': '5', 'G': '6' },
+    8  : { 'O': '0', 'Z': '2', 'S': '5', 'G': '6' },
+    9  : { 'O': '0', 'Z': '2', 'S': '5', 'G': '6' },
+    10 : { 'O': '0', 'Z': '2', 'S': '5', 'G': '6' },
+    11 : { 'O': '0', 'Z': '2', 'S': '5', 'G': '6' },
+    12 : { 'O': '0', 'Z': '2', 'S': '5', 'G': '6' },
+    13 : { 'O': '0', 'Z': '2', 'S': '5', 'G': '6' },
+    16 : { 'O': '0', 'Z': '2', 'S': '5', 'G': '6' },
+    17 : { 'O': '0', 'Z': '2', 'S': '5', 'G': '6' },
+    18 : { 'O': '0', 'Z': '2', 'S': '5', 'G': '6' },
+    19 : { 'O': '0', 'Z': '2', 'S': '5', 'G': '6' },
+    20 : { 'O': '0', 'Z': '2', 'S': '5', 'G': '6' },
+    21 : { 'O': '0', 'Z': '2', 'S': '5', 'G': '6' },
+    22 : { 'O': '0', 'Z': '2', 'S': '5', 'G': '6' },
+    23 : { 'O': '0', 'Z': '2', 'S': '5', 'G': '6' },
+    24 : { 'O': '0', 'Z': '2', 'S': '5', 'G': '6' },
+    33 : { 'O': '0', 'Z': '2', 'S': '5', 'G': '6' },
+    34 : { 'O': '0', 'Z': '2', 'S': '5', 'G': '6' },
+    35 : { 'O': '0', 'Z': '2', 'S': '5', 'G': '6' },
+    36 : { 'O': '0', 'Z': '2', 'S': '5', 'G': '6' },
+    37 : { 'O': '0', 'Z': '2', 'S': '5', 'G': '6' },
+    29 : { '2': 'Z', '6': 'G', '8': 'B', '0': 'O', '1' : 'I' },
+    31 : { '2': 'Z', '6': 'G', '8': 'B', '0': 'O', '1' : 'I' },
+    39 : { '2': 'Z', '6': 'G', '8': 'B', '0': 'O', '1' : 'I' },
+    40 : { 'O': '0', 'Z': '2', 'S': '5', 'G': '6' }
+  }
+
   def __init__(self):
     self.catalogs_data = CatalogsData()
 
   def parse_modules(self, modules, annuary_data):
 
     if len(modules) > 3:
-      msg = 'Only 3 modules per row is allowed, ' + str(len(modules)) + ' found.'
-      raise DiaryParsingException(msg, DiaryParsingException.MODULES_LEN_EXCEED)
-    
-    parser_modules = []
-    for module_str in modules:
-      self.parse_module_str(module_str, annuary_data)
+      msg = 'Row only should have 3 or less modules.'
+      raise DiaryParsingException(msg, DiaryParsingException.MODULES_NUMBER_EXCEEDED)
 
-    return parser_modules
+    parsed_modules = []
+    for module_str in modules:
+      parsed_module = self.parse_module_str(module_str, annuary_data)
+      parsed_modules.append(parsed_module)
+
+    return parsed_modules
   
   def parse_module_str(self, module_str, annuary_data):
-    #print('\n' + module_str)
 
     # Search the corresponding module type
     module_type = self.get_module_type(module_str)
@@ -145,10 +178,6 @@ class DiaryModuleParser:
     # Catalog 1 - year
     elif catalog_id == 1:
       return self.parse_year(zone_str)
-    
-    # Catalog 2 - month, exist empty month
-    elif catalog_id == 2 and zone_str == '_':
-      return zone_str
 
     # Catalog 27 - 9
     elif catalog_id == 27:
@@ -157,16 +186,32 @@ class DiaryModuleParser:
     # Catalog 32, 42 - Annuary
     elif catalog_id == 32 or catalog_id == 42:
       return self.search_annuary_register_by_zone_str(zone_str, annuary_data)
-
-    # Other catalog
-    catalog = self.catalogs_data.get(catalog_id)
     
-    return ''
+    # Other catalog
+    known_issues = {}
+    if catalog_id in DiaryModuleParser.KNOWN_CATALOG_ISSUES:
+      known_issues = DiaryModuleParser.KNOWN_CATALOG_ISSUES[catalog_id]
+
+    zone_str = self.fix_known_issues(known_issues, zone_str)
+
+    catalog = self.catalogs_data.get(catalog_id)
+    catalog_register = catalog.get(zone_str)
+
+    if not catalog_register:
+      msg = 'Invalid value on zone.'
+      raise DiaryParsingException(msg, DiaryParsingException.INVALID_VALUE_ON_ZONE)
+    
+    return zone_str
   
   def parse_year(self, year_str):
 
-    # Known issues O -> 0, S -> 5, G -> 6
-    year_str = year_str.replace('O', '0').replace('S', '5').replace('G', '6')
+    # Known issues O -> 0, S -> 5, I -> 1
+    known_issues = { 'O': '0', 'S': '5', 'I': '1', 'G': '6' }
+    year_str = self.fix_known_issues(known_issues, year_str)
+
+    # Known issues empty year
+    if '_' in year_str:
+      return year_str
 
     if not matches(DiaryModuleParser.YEAR_PATTERN, year_str):
       msg = 'Zone is not year: ' + year_str
@@ -176,8 +221,8 @@ class DiaryModuleParser:
   
   def search_annuary_register_by_zone_str(self, zone_str, annuary_data):
 
-    # Known issues _ -> empty, O -> 0
-    tmp_str = zone_str.replace('_', '').replace('O', '0')
+    # Known issues _ -> 0, O -> 0
+    zone_str = self.fix_known_issues({ '_': '0', 'O': '0' }, zone_str)
 
     # Known issues '000' is a valid num id
     if '000' in zone_str:
@@ -195,3 +240,11 @@ class DiaryModuleParser:
       raise DiaryParsingException(msg, DiaryParsingException.NO_ANNUARY_REGISTER)
     
     return zone_str
+  
+  def fix_known_issues(self, changes, zone_str):
+
+    tmp = zone_str
+    for bad_str in changes:
+      tmp = tmp.replace(bad_str, changes[bad_str])
+    
+    return tmp

@@ -46,30 +46,40 @@ class CatalogsData:
     self.catalogs = {}
 
     print('\nCATALOGS DATA\n')
+    print('Loading catalogs...')
+
     for catalog_id in CatalogsData.CATALOGS_DESCRIPTION:
-      self.load_catalog(catalog_id, CatalogsData.CATALOGS_DESCRIPTION[catalog_id])
+      description = CatalogsData.CATALOGS_DESCRIPTION[catalog_id]
+      self.catalogs[catalog_id] = Catalog(description)
+
+    print('Catalogs loaded!')
     print('--------------')
-  
-  def load_catalog(self, catalog_id, catalog_description):
-    csvpath = 'csv/' + catalog_description['file'] + '.csv'
-
-    print('Loading catalog from file ' + csvpath + '...')
-
-    catalog = {
-      'header'    : catalog_description['header'],
-      'registers' : []
-    }
-
-    with open(csvpath, 'rb') as csvfile:
-      csvreader = csv.DictReader(csvfile, delimiter=',', quotechar="'", quoting=csv.QUOTE_NONNUMERIC)
-
-      for register in csvreader:
-        catalog['registers'].append(register)
-    
-    self.catalogs[catalog_id] = catalog
   
   def get(self, catalog_id):
     if not catalog_id in self.catalogs:
       return None
 
     return self.catalogs[catalog_id]
+
+class Catalog:
+
+  def __init__(self, catalog_description):
+
+    self.header = catalog_description['header']
+    self.field_key = self.header[0]
+    self.registers = {}
+
+    csvpath = 'csv/' + catalog_description['file'] + '.csv'
+
+    with open(csvpath, 'rb') as csvfile:
+      csvreader = csv.DictReader(csvfile, delimiter=',', quotechar="'", quoting=csv.QUOTE_NONNUMERIC)
+
+      for register in csvreader:
+        key = register[self.field_key]
+        self.registers[key] = register
+  
+  def get(self, key):
+    if not key in self.registers:
+      return None
+
+    return self.registers[key]
