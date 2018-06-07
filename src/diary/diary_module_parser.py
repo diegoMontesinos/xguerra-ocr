@@ -144,7 +144,7 @@ class DiaryModuleParser:
       size_zone = zone[1]
       zone_str = module_str[index:(index + size_zone)]
 
-      result_zone = self.parse_zone(zone, zone_str, annuary_data)
+      result_zone = self.parse_zone(zone, zone_str, module_str, annuary_data)
       parsed_module.append(result_zone)
 
       index = index + size_zone
@@ -163,7 +163,7 @@ class DiaryModuleParser:
     
     return None
   
-  def parse_zone(self, zone, zone_str, annuary_data):
+  def parse_zone(self, zone, zone_str, module_str, annuary_data):
 
     if zone_str == '':
       msg = 'Zone string is empty.'
@@ -198,7 +198,7 @@ class DiaryModuleParser:
     catalog_register = catalog.get(zone_str)
 
     if not catalog_register:
-      msg = 'Invalid value on zone: ' + zone_str
+      msg = 'Invalid value on zone: ' + zone_str + ' in: ' + module_str
       raise DiaryParsingException(msg, DiaryParsingException.INVALID_VALUE_ON_ZONE)
     
     return zone_str

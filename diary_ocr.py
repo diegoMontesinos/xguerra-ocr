@@ -192,7 +192,7 @@ class DiaryOCR:
 
     # Show image
     cv2.imshow('Header', header_img)
-    cv2.waitKey(10)
+    cv2.waitKey(0)
 
     user_input = raw_input('  Enter the fixed register: ')
     cv2.destroyAllWindows()
@@ -280,15 +280,10 @@ class DiaryOCR:
 
     # Show image
     cv2.imshow('Content row image', row_img)
-    cv2.waitKey(10)
+    cv2.waitKey(0)
 
     user_input = raw_input(' [' + '_'.join(modules) + '] Enter the fixed modules: ')
     cv2.destroyAllWindows()
-    
-    if len(user_input) < 33:
-      missing_spaces = 11 - (len(user_input) % 11)
-      for i in range(missing_spaces):
-        user_input += DiaryOCR.SPACE_CHAR
 
     return self.process_content_row_str(row_img, user_input)
   
