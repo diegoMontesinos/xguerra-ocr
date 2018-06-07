@@ -8,12 +8,13 @@ import cv2
 import numpy as np
 import os
 import readline
+import math
 from src import AnnuaryData, DiaryData, crop_roi, show_scaled_image, \
                 fix_image_rotation, binarize_image, find_columns_on_diary, \
                 find_blocks_on_diary_col, parse_annuary_register_str, \
                 get_diary_content_rows, AnnuaryParsingException, \
                 get_tesseract_cmd, parse_num_id_only, DiaryModuleParser, \
-                DiaryParsingException
+                DiaryParsingException, draw_boxes
 
 import time
 
@@ -223,7 +224,7 @@ class DiaryOCR:
     row_img = crop_roi(content_img, row)
     row_str = self.read_content_row(row_img, row_modules)
 
-    return self.process_content_row_str(row_img, row_str)
+    return self.process_content_row_str(content_img, row, row_str)
 
   def read_content_row(self, row_img, row_modules):
     row_str = ''
@@ -252,14 +253,14 @@ class DiaryOCR:
     
     return row_str
   
-  def process_content_row_str(self, row_img, row_str):
+  def process_content_row_str(self, content_img, row, row_str):
 
     # Get the readed modules and parse them
     modules = self.slice_row_str(row_str)
     try:
       parsed_modules = self.module_parser.parse_modules(modules, self.annuary_data)
     except DiaryParsingException as exception:
-      return self.user_fix_modules_error(row_img, exception, modules)
+      return self.user_fix_modules_error(content_img, row, modules, exception)
     
     return parsed_modules
   
@@ -267,7 +268,7 @@ class DiaryOCR:
 
     modules = []
 
-    num_modules = len(row_str) / 11
+    num_modules = int(math.ceil(len(row_str) / 11.0))
     for i in range(num_modules):
       init = i * 11
       stop = init + 10
@@ -275,17 +276,18 @@ class DiaryOCR:
 
     return modules
 
-  def user_fix_modules_error(self, row_img, exception, modules):
+  def user_fix_modules_error(self, content_img, row, modules, exception):
     print('  ---\n  DIARY ERROR: ' + str(exception) + '. Help me to fix it.')
 
     # Show image
-    cv2.imshow('Content row image', row_img)
+    show_row_img = draw_boxes(content_img, [ row ], (0, 255, 0))
+    cv2.imshow('Content row image', show_row_img)
     cv2.waitKey(0)
 
     user_input = raw_input(' [' + '_'.join(modules) + '] Enter the fixed modules: ')
     cv2.destroyAllWindows()
 
-    return self.process_content_row_str(row_img, user_input)
+    return self.process_content_row_str(content_img, row, user_input)
   
   def save_data(self):
     print('\n\n  Saving data...')
