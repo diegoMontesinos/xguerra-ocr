@@ -155,7 +155,7 @@ class DiaryOCR:
 
     # Show image
     cv2.imshow('Header', header_img)
-    cv2.waitKey(10)
+    cv2.waitKey(0)
 
     user_input = raw_input('  Help me to choose one: ')
     if user_input == '1':
