@@ -78,7 +78,7 @@ class DiaryModuleParser:
   KNOWN_CATALOG_ISSUES = {
     3  : { 'NE': 'ME', 'NI': 'MI', 'NO': 'MO', 'OR': 'QR', 'OU': 'QU', 'U5': 'US',
            '5I': 'SI', '5L': 'SL', '5O': 'SO', '8C': 'BC', 'T8': 'TB', '0': 'O',
-           '1': 'I', 'OF': 'DF', '6T': 'GT'
+           '1': 'I', 'OF': 'DF', '6T': 'GT', '5O': '50'
           },
     2  : { 'O': '0', 'Z': '2', 'S': '5', 'G': '6' },
     5  : { 'O': '0', 'Z': '2', 'S': '5', 'G': '6' },
@@ -154,8 +154,14 @@ class DiaryModuleParser:
   def get_module_type(self, module_str):
 
     # Known issue - 8 is B at beginning
-    if module_str[0] == '8':
+    if module_str.startswith('8'):
       module_str = 'B' + module_str[1:]
+    
+    if module_str.startswith('O') or module_str.startswith('0'):
+      module_str = 'D' + module_str[1:]
+
+    if module_str.startswith('B1'):
+      module_str = 'BI' + module_str[2:]
     
     for module_type in DiaryModuleParser.MODULE_ZONES:
       if module_str.startswith(module_type):
