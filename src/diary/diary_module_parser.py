@@ -131,7 +131,7 @@ class DiaryModuleParser:
     # Search the corresponding module type
     module_type = self.get_module_type(module_str)
     if not module_type:
-      msg = 'Module type not recognized.'
+      msg = 'Module type not recognized: ' + module_str
       raise DiaryParsingException(msg, DiaryParsingException.MODULE_TYPE_NOT_RECOGNIZED)
     
     parsed_module = [ module_type ]
@@ -198,7 +198,7 @@ class DiaryModuleParser:
     catalog_register = catalog.get(zone_str)
 
     if not catalog_register:
-      msg = 'Invalid value on zone.'
+      msg = 'Invalid value on zone: ' + zone_str
       raise DiaryParsingException(msg, DiaryParsingException.INVALID_VALUE_ON_ZONE)
     
     return zone_str
@@ -217,7 +217,7 @@ class DiaryModuleParser:
       msg = 'Zone is not year: ' + year_str
       raise DiaryParsingException(msg, DiaryParsingException.BAD_YEAR)
     
-    return int(year_str)
+    return year_str
   
   def search_annuary_register_by_zone_str(self, zone_str, annuary_data):
 

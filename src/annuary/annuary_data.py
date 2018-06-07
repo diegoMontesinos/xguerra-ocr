@@ -12,16 +12,17 @@ class AnnuaryData:
 
   def __init__(self, csvpath=None):
     self.data = {}
+    self.csvpath = csvpath
 
-    should_read = (csvpath != None) and os.path.exists(csvpath)
+    should_read = (self.csvpath != None) and os.path.exists(self.csvpath)
     if should_read:
-      self.load_from_file(csvpath)
+      self.load_from_file()
   
-  def load_from_file(self, csvpath):
+  def load_from_file(self):
     print('\nANNUARY DATA\n')
-    print('Loading data from file: ' + csvpath + '...')
+    print('Loading data from file: ' + self.csvpath + '...')
     
-    with open(csvpath, 'rb') as csvfile:
+    with open(self.csvpath, 'rb') as csvfile:
       annuary_reader = csv.DictReader(csvfile, delimiter=',', quotechar="'", quoting=csv.QUOTE_NONNUMERIC)
 
       for register in annuary_reader:
@@ -102,18 +103,18 @@ class AnnuaryData:
     self.data[num_id] = register
     return True
   
-  def save(self, csvpath=None):
-    if not csvpath:
+  def save(self):
+    if not self.csvpath:
       return
     
-    print('Saving annuary data to file ' + csvpath + '...')
+    print('\nSaving annuary data to file ' + self.csvpath + '...')
 
     # Create directories if dont exist
-    basedir = os.path.dirname(csvpath)
+    basedir = os.path.dirname(self.csvpath)
     if not os.path.exists(basedir):
       os.makedirs(basedir)
     
-    with open(csvpath, 'wb') as csvfile:
+    with open(self.csvpath, 'wb') as csvfile:
       annuary_writer = csv.DictWriter(csvfile, fieldnames=CSV_ANNUARY_FIELDNAMES,
                                                delimiter=',',
                                                quotechar="'",

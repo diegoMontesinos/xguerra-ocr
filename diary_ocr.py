@@ -7,6 +7,7 @@ import argparse
 import cv2
 import numpy as np
 import os
+import readline
 from src import AnnuaryData, DiaryData, crop_roi, show_scaled_image, \
                 fix_image_rotation, binarize_image, find_columns_on_diary, \
                 find_blocks_on_diary_col, parse_annuary_register_str, \
@@ -76,24 +77,34 @@ class DiaryOCR:
   
   def process_block(self, img_col, block):
 
-    # Get header
-    #header_img = crop_roi(img_col, block[0])
-    #header_register = self.read_header(header_img)
+    print('\n  :::::::::')
 
-    #if not header_register:
-    #  return
+    # Get header
+    header_img = crop_roi(img_col, block[0])
+    header_register = self.read_header(header_img)
+    annuary_id = header_register['num_id']
+
+    print('  * Annuary register: ' + str(header_register))
 
     # Check if has content
     has_content = (block[1] != None)
     if not has_content:
+      return
+    
+    # Check if is already readed (prevent repeat work)
+    stored_content = self.diary_data.search_by_annuary_id(annuary_id)
+    if (stored_content != None) and (len(stored_content) > 0):
       return
 
     # Get content
     content_img = crop_roi(img_col, block[1])
     content = self.read_content(content_img)
 
-    # Register in data
-    #self.add_content(header_register, content)
+    # Register content
+    print('  * Content: ')
+    for module in content:
+      self.diary_data.add_module(annuary_id, module)
+      print('    - ' + ''.join(module))
 
   def read_header(self, header_img):
 
@@ -116,13 +127,10 @@ class DiaryOCR:
       # Not registered
       if not annuary_register:
         self.annuary_data.add_register(readed_register)
-        print('  ---\n  Added register: ' + str(readed_register))
-        
         return readed_register
       
       # Registered but not equal
       elif not self.are_registers_equals(readed_register, annuary_register):
-        return None
         return self.choose_register(header_img, readed_register, annuary_register)
 
       # Registered
@@ -130,7 +138,6 @@ class DiaryOCR:
         return readed_register
 
     except AnnuaryParsingException as exception:
-      return None
       return self.fix_annuary_register(header_img, readed_str, exception)
   
   def are_registers_equals(self, register_a, register_b):
@@ -142,9 +149,9 @@ class DiaryOCR:
   def choose_register(self, header_img, register_a, register_b):
 
     # Get option from user
-    print('  ---\n  Differences were found in registers.')
-    print('  1. ' + str(register_a))
-    print('  2. ' + str(register_b))
+    print('\n  Differences were found in registers.')
+    print('      1. ' + str(register_a))
+    print('      2. ' + str(register_b))
 
     # Show image
     cv2.imshow('Header', header_img)
@@ -181,8 +188,7 @@ class DiaryOCR:
     return annuary_register
   
   def user_fix_annuary_error(self, header_img, exception):
-    print('  ---\n  Please, help me to fix the following annuary exception (● ω ●):')
-    print('  ' + str(exception))
+    print('  ---\n  ANNUARY ERROR: ' + str(exception) + '. Help me to fix it.')
 
     # Show image
     cv2.imshow('Header', header_img)
@@ -238,10 +244,11 @@ class DiaryOCR:
       readed_str = bytes_readed.encode('utf-8')
 
       row_str += readed_str
-
-    missing_spaces = 11 - (len(row_str) % 11)
-    for i in range(missing_spaces):
-      row_str += DiaryOCR.SPACE_CHAR
+    
+    if len(row_str) < 33:
+      missing_spaces = 11 - (len(row_str) % 11)
+      for i in range(missing_spaces):
+        row_str += DiaryOCR.SPACE_CHAR
     
     return row_str
   
@@ -252,8 +259,7 @@ class DiaryOCR:
     try:
       parsed_modules = self.module_parser.parse_modules(modules, self.annuary_data)
     except DiaryParsingException as exception:
-      print('    ' + str(modules))
-      return self.user_fix_modules_error(row_img, exception)
+      return self.user_fix_modules_error(row_img, exception, modules)
     
     return parsed_modules
   
@@ -269,17 +275,28 @@ class DiaryOCR:
 
     return modules
 
-  def user_fix_modules_error(self, row_img, exception):
-    print('  ' + str(exception))
+  def user_fix_modules_error(self, row_img, exception, modules):
+    print('  ---\n  DIARY ERROR: ' + str(exception) + '. Help me to fix it.')
 
     # Show image
     cv2.imshow('Content row image', row_img)
     cv2.waitKey(10)
 
-    user_input = raw_input('  Enter the fixed register: ')
+    user_input = raw_input(' [' + '_'.join(modules) + '] Enter the fixed modules: ')
     cv2.destroyAllWindows()
+    
+    if len(user_input) < 33:
+      missing_spaces = 11 - (len(user_input) % 11)
+      for i in range(missing_spaces):
+        user_input += DiaryOCR.SPACE_CHAR
 
     return self.process_content_row_str(row_img, user_input)
+  
+  def save_data(self):
+    print('\n\n  Saving data...')
+
+    self.annuary_data.save()
+    self.diary_data.save()
 
 def print_welcome_message():
   print('\n:::::::::::::::::::::::::::::::::::::::::::::::::::::::::')
@@ -315,16 +332,20 @@ def main():
     print('error: argument -i/--input is required')
     return
   
-  #print_welcome_message()
+  print_welcome_message()
 
   init_ts = time.time()
-  
+
   # Create OCR and run
   ocr = DiaryOCR(args)
-  ocr.start()
+  try:
+    ocr.start()
+    ocr.save_data()
+  except KeyboardInterrupt:
+    ocr.save_data()
 
   duration = time.time() - init_ts
-  print('Finish at ' + str(duration) + ' seconds.')
+  print('\n  Finished at ' + str(duration) + ' seconds.')
 
 if __name__ == '__main__':
   main()
