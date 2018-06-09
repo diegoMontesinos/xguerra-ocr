@@ -27,7 +27,7 @@ class DiaryOCR:
     self.annuary_data = AnnuaryData(args.annuary)
     self.diary_data = DiaryData(args.output)
 
-    self.module_parser = DiaryModuleParser()
+    self.module_parser = DiaryModuleParser(self.annuary_data)
 
     self.input_path = args.input
     self.debug = args.debug
@@ -96,7 +96,7 @@ class DiaryOCR:
     stored_content = self.diary_data.search_by_annuary_id(annuary_id)
     if (stored_content != None) and (len(stored_content) > 0):
       return
-
+    
     # Get content
     content_img = crop_roi(img_col, block[1])
     content = self.read_content(content_img)
@@ -156,7 +156,8 @@ class DiaryOCR:
 
     # Show image
     cv2.imshow('Header', header_img)
-    cv2.waitKey(0)
+    while cv2.waitKey(0) != ord('c'):
+      pass
 
     user_input = raw_input('  Help me to choose one: ')
     if user_input == '1':
@@ -193,7 +194,8 @@ class DiaryOCR:
 
     # Show image
     cv2.imshow('Header', header_img)
-    cv2.waitKey(0)
+    while cv2.waitKey(0) != ord('c'):
+      pass
 
     user_input = raw_input('  Enter the fixed register: ')
     cv2.destroyAllWindows()
@@ -204,7 +206,7 @@ class DiaryOCR:
 
     if self.debug:
       show_scaled_image('content', content_img, 1.0)
-
+    
     # Get each content row
     content_rows = get_diary_content_rows(content_img, self.debug)
 
@@ -253,14 +255,14 @@ class DiaryOCR:
     
     return row_str
   
-  def process_content_row_str(self, content_img, row, row_str):
-
-    # Get the readed modules and parse them
+  def process_content_row_str(self, content_img, row, row_str, skipping={}):
+    
+    # Parse row_str into modules
     modules = self.slice_row_str(row_str)
     try:
-      parsed_modules = self.module_parser.parse_modules(modules, self.annuary_data)
+      parsed_modules = self.module_parser.parse_modules(modules, skipping)
     except DiaryParsingException as exception:
-      return self.user_fix_modules_error(content_img, row, modules, exception)
+      return self.user_fix_modules_error(content_img, row, row_str, exception, skipping)
     
     return parsed_modules
   
@@ -276,18 +278,40 @@ class DiaryOCR:
 
     return modules
 
-  def user_fix_modules_error(self, content_img, row, modules, exception):
+  def user_fix_modules_error(self, content_img, row, row_str, exception, skipping):
     print('  ---\n  DIARY ERROR: ' + str(exception) + '. Help me to fix it.')
 
     # Show image
     show_row_img = draw_boxes(content_img, [ row ], (0, 255, 0))
     cv2.imshow('Content row image', show_row_img)
-    cv2.waitKey(0)
+    while cv2.waitKey(0) != ord('c'):
+      pass
 
-    user_input = raw_input(' [' + '_'.join(modules) + '] Enter the fixed modules: ')
+    user_input = raw_input(' [' + row_str + '] Enter the fixed text: ')
     cv2.destroyAllWindows()
 
-    return self.process_content_row_str(content_img, row, user_input)
+    # User try to skip the exception
+    if (user_input == 'SKIP'):
+      could_skip_exception = (exception.num_module != -1) and (exception.zone != None)
+
+      if could_skip_exception:
+        skipping = self.skip_exception(skipping, exception)
+        return self.process_content_row_str(content_img, row, row_str, skipping)
+
+      else:
+        print('  You cant skip this exception.')
+        return user_fix_modules_error(content_img, row, row_str, exception, skipping)
+    
+    return self.process_content_row_str(content_img, row, user_input, skipping)
+  
+  def skip_exception(self, skipping, exception):
+
+    if not exception.num_module in skipping:
+      skipping[exception.num_module] = []
+      
+    skipping[exception.num_module].append(exception)
+
+    return skipping
   
   def save_data(self):
     print('\n\n  Saving data...')
@@ -311,7 +335,7 @@ def main():
   # Check tesseract installation
   tesseract_cmd = get_tesseract_cmd()
   if (not tesseract_cmd) or (tesseract_cmd == ''):
-    print 'Tesseract not installed'
+    print('Tesseract not installed')
     return
   
   pytesseract.pytesseract.tesseract_cmd = tesseract_cmd
@@ -329,9 +353,9 @@ def main():
     print('error: argument -i/--input is required')
     return
   
-  print_welcome_message()
-
   init_ts = time.time()
+  
+  #print_welcome_message()
 
   # Create OCR and run
   ocr = DiaryOCR(args)
