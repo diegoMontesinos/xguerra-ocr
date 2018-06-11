@@ -300,7 +300,7 @@ class DiaryOCR:
 
       else:
         print('  You cant skip this exception.')
-        return user_fix_modules_error(content_img, row, row_str, exception, skipping)
+        return self.user_fix_modules_error(content_img, row, row_str, exception, skipping)
     
     return self.process_content_row_str(content_img, row, user_input, skipping)
   
