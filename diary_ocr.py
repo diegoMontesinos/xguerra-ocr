@@ -156,8 +156,7 @@ class DiaryOCR:
 
     # Show image
     cv2.imshow('Header', header_img)
-    while cv2.waitKey(0) != ord('c'):
-      pass
+    cv2.waitKey(0)
 
     user_input = raw_input('  Help me to choose one: ')
     if user_input == '1':
@@ -194,8 +193,7 @@ class DiaryOCR:
 
     # Show image
     cv2.imshow('Header', header_img)
-    while cv2.waitKey(0) != ord('c'):
-      pass
+    cv2.waitKey(0)
 
     user_input = raw_input('  Enter the fixed register: ')
     cv2.destroyAllWindows()
@@ -284,8 +282,7 @@ class DiaryOCR:
     # Show image
     show_row_img = draw_boxes(content_img, [ row ], (0, 255, 0))
     cv2.imshow('Content row image', show_row_img)
-    while cv2.waitKey(0) != ord('c'):
-      pass
+    cv2.waitKey(0)
 
     user_input = raw_input(' [' + row_str + '] Enter the fixed text: ')
     cv2.destroyAllWindows()
